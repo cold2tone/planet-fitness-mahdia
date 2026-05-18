@@ -1,0 +1,686 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Planet Fitness Mahdia</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --purple: #9D4EDD;
+            --purple-dark: #7B2CBF;
+            --purple-glow: rgba(157,78,221,0.28);
+            --bg: #080809;
+            --surface: #111114;
+            --surface2: #18181d;
+            --border: rgba(255,255,255,0.07);
+            --text-muted: #555;
+            --text-dim: #888;
+        }
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        html { scroll-behavior: smooth; }
+        body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: #e2e2e2; overflow-x: hidden; }
+
+        body::after {
+            content:''; position:fixed; inset:0; pointer-events:none; z-index:9999;
+            background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+            opacity:0.022;
+        }
+
+        /* ─── AUTH MODAL ─── */
+        .overlay {
+            position:fixed; inset:0; z-index:600;
+            background:rgba(0,0,0,0.78); backdrop-filter:blur(14px);
+            display:flex; align-items:center; justify-content:center;
+            opacity:0; pointer-events:none; transition:opacity 0.3s;
+        }
+        .overlay.open { opacity:1; pointer-events:all; }
+        .modal-box {
+            background:var(--surface); border:1px solid rgba(157,78,221,0.28);
+            border-radius:24px; padding:48px 42px; width:100%; max-width:400px;
+            position:relative;
+            transform:translateY(18px) scale(0.97); transition:transform 0.32s cubic-bezier(0.16,1,0.3,1);
+            box-shadow:0 0 90px rgba(157,78,221,0.14);
+        }
+        .overlay.open .modal-box { transform:translateY(0) scale(1); }
+
+        .modal-close {
+            position:absolute; top:16px; right:18px; background:none; border:none;
+            color:var(--text-dim); font-size:20px; cursor:pointer; line-height:1;
+            transition:color 0.2s;
+        }
+        .modal-close:hover { color:#fff; }
+
+        .modal-brand { font-family:'Bebas Neue',sans-serif; font-size:18px; letter-spacing:0.08em; color:#fff; margin-bottom:4px; }
+        .modal-brand span { color:var(--purple); }
+        .modal-heading { font-family:'Bebas Neue',sans-serif; font-size:34px; letter-spacing:0.04em; color:#fff; margin-bottom:4px; }
+        .modal-sub { font-size:13px; color:var(--text-dim); margin-bottom:28px; }
+
+        .tab-row { display:flex; gap:4px; background:var(--surface2); border-radius:12px; padding:4px; margin-bottom:26px; }
+        .tab-btn {
+            flex:1; padding:10px; border:none; border-radius:9px;
+            font-family:'DM Sans',sans-serif; font-size:13px; font-weight:600;
+            letter-spacing:0.06em; cursor:pointer;
+            background:transparent; color:var(--text-dim);
+            transition:background 0.2s, color 0.2s;
+        }
+        .tab-btn.active { background:var(--purple); color:#fff; }
+
+        .field { margin-bottom:16px; }
+        .field label { display:block; font-size:11px; font-weight:600; letter-spacing:0.1em; text-transform:uppercase; color:var(--text-dim); margin-bottom:7px; }
+        .field input {
+            width:100%; padding:13px 15px;
+            background:var(--surface2); border:1px solid var(--border);
+            border-radius:11px; color:#fff;
+            font-family:'DM Sans',sans-serif; font-size:14px; outline:none;
+            transition:border-color 0.2s, box-shadow 0.2s;
+        }
+        .field input:focus { border-color:var(--purple); box-shadow:0 0 0 3px rgba(157,78,221,0.14); }
+        .field input::placeholder { color:var(--text-muted); }
+
+        .btn-submit {
+            width:100%; padding:15px; margin-top:6px;
+            background:var(--purple); border:none; border-radius:13px;
+            color:#fff; font-family:'DM Sans',sans-serif; font-size:13px;
+            font-weight:700; letter-spacing:0.12em; text-transform:uppercase;
+            cursor:pointer; transition:background 0.2s, transform 0.15s, box-shadow 0.2s;
+        }
+        .btn-submit:hover { background:var(--purple-dark); transform:translateY(-1px); box-shadow:0 8px 28px rgba(157,78,221,0.3); }
+
+        .msg-err { font-size:12px; color:#f87171; margin-top:10px; text-align:center; min-height:16px; }
+        .msg-ok  { font-size:12px; color:#4ade80; margin-top:10px; text-align:center; min-height:16px; }
+
+        /* ─── DASHBOARD OVERLAY ─── */
+        .dash-overlay {
+            position:fixed; inset:0; z-index:500;
+            background:rgba(0,0,0,0.82); backdrop-filter:blur(16px);
+            display:flex; align-items:center; justify-content:center;
+            opacity:0; pointer-events:none; transition:opacity 0.3s;
+        }
+        .dash-overlay.open { opacity:1; pointer-events:all; }
+        .dash-box {
+            background:var(--surface); border:1px solid var(--border);
+            border-radius:28px; padding:44px 40px; width:100%; max-width:480px;
+            transform:scale(0.96); transition:transform 0.32s cubic-bezier(0.16,1,0.3,1);
+        }
+        .dash-overlay.open .dash-box { transform:scale(1); }
+
+        .dash-close {
+            float:right; background:none; border:none; color:var(--text-dim);
+            font-size:20px; cursor:pointer; transition:color 0.2s;
+        }
+        .dash-close:hover { color:#fff; }
+
+        .dash-avatar {
+            width:68px; height:68px; border-radius:50%;
+            background:linear-gradient(135deg,var(--purple),#c084fc);
+            display:flex; align-items:center; justify-content:center;
+            font-family:'Bebas Neue',sans-serif; font-size:30px; color:#fff;
+            margin-bottom:16px;
+        }
+        .dash-name-txt { font-family:'Bebas Neue',sans-serif; font-size:36px; letter-spacing:0.04em; color:#fff; line-height:1; }
+        .dash-email-txt { font-size:13px; color:var(--text-dim); margin-bottom:28px; margin-top:4px; }
+
+        .dash-stats { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-bottom:24px; }
+        .ds {
+            background:var(--surface2); border:1px solid var(--border);
+            border-radius:14px; padding:16px; text-align:center;
+        }
+        .ds-num { font-family:'Bebas Neue',sans-serif; font-size:28px; color:var(--purple); letter-spacing:0.04em; }
+        .ds-label { font-size:10px; color:var(--text-dim); letter-spacing:0.1em; text-transform:uppercase; margin-top:3px; }
+
+        .dash-mem {
+            background:linear-gradient(135deg,rgba(157,78,221,0.12),rgba(123,44,191,0.06));
+            border:1px solid rgba(157,78,221,0.28);
+            border-radius:14px; padding:18px 22px;
+            display:flex; align-items:center; justify-content:space-between;
+            margin-bottom:24px;
+        }
+        .dm-label { font-size:10px; font-weight:600; text-transform:uppercase; letter-spacing:0.1em; color:var(--purple); }
+        .dm-val { font-family:'Bebas Neue',sans-serif; font-size:24px; color:#fff; margin-top:2px; }
+        .dm-badge { font-size:11px; font-weight:600; background:rgba(34,197,94,0.12); color:#4ade80; border:1px solid rgba(34,197,94,0.22); padding:5px 12px; border-radius:100px; letter-spacing:0.06em; }
+
+        .btn-logout {
+            width:100%; padding:13px; background:var(--surface2);
+            border:1px solid var(--border); border-radius:12px;
+            color:var(--text-dim); font-family:'DM Sans',sans-serif;
+            font-size:13px; font-weight:600; letter-spacing:0.08em;
+            text-transform:uppercase; cursor:pointer;
+            transition:background 0.2s, color 0.2s, border-color 0.2s;
+        }
+        .btn-logout:hover { background:rgba(239,68,68,0.08); color:#f87171; border-color:rgba(239,68,68,0.18); }
+
+        /* ─── HEADER ─── */
+        header {
+            position:fixed; top:0; left:0; right:0; z-index:300;
+            height:72px; display:flex; align-items:center;
+            padding:0 40px; justify-content:space-between;
+            background:rgba(8,8,9,0.8); backdrop-filter:blur(20px);
+            border-bottom:1px solid var(--border);
+        }
+        .logo { font-family:'Bebas Neue',sans-serif; font-size:22px; letter-spacing:0.08em; color:#fff; text-decoration:none; }
+        .logo em { color:var(--purple); font-style:normal; }
+        .logo small { color:var(--text-dim); font-size:13px; font-family:'DM Sans',sans-serif; font-weight:400; letter-spacing:0.04em; }
+        nav { display:flex; gap:34px; }
+        nav a { color:var(--text-dim); text-decoration:none; font-size:12px; font-weight:500; letter-spacing:0.12em; text-transform:uppercase; transition:color 0.2s; }
+        nav a:hover { color:#fff; }
+        .hdr-btns { display:flex; gap:10px; align-items:center; }
+        .hbtn {
+            padding:9px 20px; border-radius:100px;
+            font-family:'DM Sans',sans-serif; font-size:11px; font-weight:600;
+            letter-spacing:0.1em; text-transform:uppercase; cursor:pointer;
+            border:none; transition:background 0.2s, transform 0.15s;
+        }
+        .hbtn-ghost { background:var(--surface2); color:#bbb; border:1px solid var(--border); }
+        .hbtn-ghost:hover { color:#fff; }
+        .hbtn-purple { background:var(--purple); color:#fff; }
+        .hbtn-purple:hover { background:var(--purple-dark); transform:translateY(-1px); }
+        .hbtn-user { background:linear-gradient(135deg,var(--purple),#c084fc); color:#fff; display:flex; align-items:center; gap:8px; }
+        .hbtn-user:hover { transform:translateY(-1px); }
+        .user-dot { width:24px; height:24px; border-radius:50%; background:rgba(255,255,255,0.22); display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; }
+
+        @media(max-width:640px){ header{padding:0 18px;} nav{display:none;} }
+
+        /* ─── HERO ─── */
+        #hero {
+            min-height:100vh; display:flex; align-items:center; justify-content:center;
+            text-align:center; padding:100px 24px 60px; position:relative; overflow:hidden;
+        }
+        .blob { position:absolute; border-radius:50%; filter:blur(130px); pointer-events:none; }
+        .blob-a { width:560px; height:560px; background:var(--purple-glow); top:8%; left:-8%; animation:fA 16s ease-in-out infinite; }
+        .blob-b { width:460px; height:460px; background:rgba(123,44,191,0.13); bottom:4%; right:-5%; animation:fB 20s ease-in-out infinite; }
+        @keyframes fA{0%,100%{transform:translate(0,0)}50%{transform:translate(34px,-34px)}}
+        @keyframes fB{0%,100%{transform:translate(0,0)}50%{transform:translate(-26px,26px)}}
+
+        .hero-badge {
+            display:inline-block; background:rgba(157,78,221,0.1); border:1px solid rgba(157,78,221,0.28);
+            color:var(--purple); font-size:11px; font-weight:600; letter-spacing:0.14em; text-transform:uppercase;
+            padding:7px 18px; border-radius:100px; margin-bottom:28px;
+            animation:fadeUp 0.8s ease both;
+        }
+        .hero-title {
+            font-family:'Bebas Neue',sans-serif;
+            font-size:clamp(68px,13vw,156px); line-height:0.9;
+            letter-spacing:0.02em; color:#fff;
+            animation:fadeUp 0.85s 0.1s ease both;
+        }
+        .hero-title .acc {
+            background:linear-gradient(135deg,var(--purple),#c084fc);
+            -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text;
+            filter:drop-shadow(0 0 28px rgba(157,78,221,0.5));
+        }
+        .hero-sub { color:var(--text-dim); font-size:16px; font-weight:300; max-width:450px; margin:24px auto 40px; line-height:1.78; animation:fadeUp 0.85s 0.2s ease both; }
+        .hero-actions { display:flex; gap:12px; justify-content:center; flex-wrap:wrap; animation:fadeUp 0.85s 0.3s ease both; }
+        .btn-wh { background:#fff; color:#000; text-decoration:none; padding:15px 32px; border-radius:13px; font-size:12px; font-weight:700; letter-spacing:0.12em; text-transform:uppercase; transition:background 0.2s, transform 0.15s; }
+        .btn-wh:hover { background:#e5e5e5; transform:translateY(-2px); }
+        .btn-dk { background:var(--surface2); border:1px solid var(--border); color:#fff; text-decoration:none; padding:15px 32px; border-radius:13px; font-size:12px; font-weight:700; letter-spacing:0.12em; text-transform:uppercase; transition:background 0.2s, transform 0.15s; }
+        .btn-dk:hover { background:var(--surface); transform:translateY(-2px); }
+
+        @keyframes fadeUp{from{opacity:0;transform:translateY(22px)}to{opacity:1;transform:translateY(0)}}
+
+        /* ─── STATS BAR ─── */
+        .stats-bar {
+            display:flex; justify-content:center; gap:56px; flex-wrap:wrap;
+            padding:42px 24px; border-top:1px solid var(--border);
+            border-bottom:1px solid var(--border); background:var(--surface);
+        }
+        .si { text-align:center; }
+        .si-num { font-family:'Bebas Neue',sans-serif; font-size:44px; color:#fff; letter-spacing:0.04em; line-height:1; }
+        .si-num em { color:var(--purple); font-style:normal; }
+        .si-label { font-size:10px; color:var(--text-muted); letter-spacing:0.14em; text-transform:uppercase; margin-top:5px; }
+
+        /* ─── GENERAL SECTION ─── */
+        .section { padding:92px 24px; }
+        .section-inner { max-width:1120px; margin:0 auto; }
+        .s-label { font-size:11px; font-weight:600; letter-spacing:0.18em; text-transform:uppercase; color:var(--purple); margin-bottom:11px; }
+        .s-title { font-family:'Bebas Neue',sans-serif; font-size:clamp(36px,6vw,68px); line-height:1; letter-spacing:0.03em; color:#fff; margin-bottom:40px; }
+
+        /* ─── TRAFFIC ─── */
+        #traffic { background:var(--surface); }
+        .two-col { display:grid; grid-template-columns:1fr 1fr; gap:44px; align-items:start; }
+        @media(max-width:768px){ .two-col{grid-template-columns:1fr;} }
+
+        .tc { background:var(--bg); border:1px solid var(--border); border-radius:20px; padding:30px; }
+        .tr { margin-bottom:20px; }
+        .tr:last-child { margin-bottom:0; }
+        .tr-meta { display:flex; justify-content:space-between; font-size:11px; font-weight:600; letter-spacing:0.07em; text-transform:uppercase; color:var(--text-dim); margin-bottom:7px; }
+        .tb { height:7px; background:rgba(255,255,255,0.05); border-radius:100px; overflow:hidden; }
+        .tf { height:100%; border-radius:100px; transition:width 1.3s cubic-bezier(0.16,1,0.3,1); }
+        .tf-g { background:linear-gradient(90deg,#22c55e,#4ade80); }
+        .tf-y { background:linear-gradient(90deg,#eab308,#facc15); }
+        .tf-r { background:linear-gradient(90deg,#ef4444,#f87171); }
+        .sd { display:inline-block; width:6px; height:6px; border-radius:50%; margin-right:4px; vertical-align:middle; }
+        .sd-g { background:#22c55e; box-shadow:0 0 6px #22c55e; }
+        .sd-y { background:#eab308; box-shadow:0 0 6px #eab308; }
+        .sd-r { background:#ef4444; box-shadow:0 0 6px #ef4444; animation:blink 1.5s ease-in-out infinite; }
+        @keyframes blink{0%,100%{opacity:1}50%{opacity:0.3}}
+
+        .eq-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+        .eq-card { background:var(--surface2); border:1px solid var(--border); border-radius:15px; padding:20px; transition:border-color 0.25s, transform 0.2s; }
+        .eq-card:hover { border-color:rgba(157,78,221,0.38); transform:translateY(-3px); }
+        .eq-t { font-size:14px; font-weight:700; color:#fff; margin-bottom:4px; }
+        .eq-d { font-size:12px; color:var(--text-muted); line-height:1.6; }
+
+        /* ─── SCHEDULE ─── */
+        #schedule { background:var(--bg); }
+        .day-tabs { display:flex; justify-content:center; gap:8px; flex-wrap:wrap; margin-bottom:26px; }
+        .day-tab {
+            padding:10px 19px; border-radius:11px; font-size:12px; font-weight:600;
+            letter-spacing:0.08em; text-transform:uppercase; cursor:pointer;
+            border:1px solid var(--border); background:var(--surface2); color:var(--text-dim);
+            transition:background 0.2s, color 0.2s, border-color 0.2s, transform 0.15s; outline:none;
+        }
+        .day-tab:hover { color:#fff; transform:translateY(-1px); }
+        .day-tab.active { background:var(--purple); color:#fff; border-color:var(--purple); }
+
+        .sched-card { background:var(--surface); border:1px solid var(--border); border-radius:20px; overflow:hidden; max-width:660px; margin:0 auto; }
+        .sched-item {
+            display:flex; align-items:center; justify-content:space-between;
+            padding:20px 26px; border-bottom:1px solid var(--border);
+            transition:background 0.2s; animation:slideIn 0.35s ease both;
+        }
+        .sched-item:last-child { border-bottom:none; }
+        .sched-item:hover { background:var(--surface2); }
+        @keyframes slideIn{from{opacity:0;transform:translateX(-10px)}to{opacity:1;transform:translateX(0)}}
+        .sched-t { font-size:10px; font-weight:600; color:var(--text-muted); letter-spacing:0.1em; text-transform:uppercase; margin-bottom:4px; }
+        .sched-n { font-family:'Bebas Neue',sans-serif; font-size:21px; letter-spacing:0.04em; color:#fff; }
+        .stag { font-size:10px; font-weight:600; padding:5px 12px; border-radius:8px; letter-spacing:0.07em; text-transform:uppercase; white-space:nowrap; }
+        .stag-d { background:var(--bg); color:var(--text-dim); }
+        .stag-night { background:rgba(99,102,241,0.14); color:#818cf8; }
+        .stag-sp { background:rgba(157,78,221,0.14); color:var(--purple); }
+        .stag-com { background:rgba(234,179,8,0.11); color:#facc15; }
+
+        /* ─── PRICING ─── */
+        #pricing { background:var(--surface); }
+        .pc {
+            max-width:410px; margin:0 auto;
+            background:var(--bg); border:1px solid rgba(157,78,221,0.32);
+            border-radius:28px; padding:48px 42px; text-align:center;
+            position:relative; overflow:hidden; box-shadow:0 0 80px rgba(157,78,221,0.1);
+        }
+        .pc::before { content:''; position:absolute; top:0; left:0; right:0; height:3px; background:linear-gradient(90deg,var(--purple),#c084fc,var(--purple)); }
+        .pc-badge { display:inline-block; background:rgba(157,78,221,0.1); border:1px solid rgba(157,78,221,0.26); color:var(--purple); font-size:11px; font-weight:600; letter-spacing:0.14em; text-transform:uppercase; padding:6px 15px; border-radius:100px; margin-bottom:22px; }
+        .pc-price { font-family:'Bebas Neue',sans-serif; font-size:86px; line-height:1; color:#fff; }
+        .pc-price sup { font-size:32px; vertical-align:top; margin-top:12px; display:inline-block; color:var(--purple); }
+        .pc-price sub { font-size:20px; color:var(--text-dim); vertical-align:baseline; }
+        .pc-period { font-size:13px; color:var(--text-dim); margin-bottom:30px; }
+        .pc-list { list-style:none; text-align:left; margin-bottom:34px; }
+        .pc-list li { display:flex; align-items:center; gap:11px; padding:9px 0; border-bottom:1px solid var(--border); font-size:14px; color:#ccc; }
+        .pc-list li:last-child { border-bottom:none; }
+        .pc-list li::before { content:'✓'; color:var(--purple); font-weight:700; flex-shrink:0; }
+        .btn-join {
+            display:block; width:100%; padding:16px; background:var(--purple); border:none; border-radius:13px;
+            color:#fff; font-family:'DM Sans',sans-serif; font-size:13px; font-weight:700;
+            letter-spacing:0.12em; text-transform:uppercase; cursor:pointer;
+            transition:background 0.2s, transform 0.15s, box-shadow 0.2s;
+        }
+        .btn-join:hover { background:var(--purple-dark); transform:translateY(-2px); box-shadow:0 12px 32px rgba(157,78,221,0.28); }
+
+        /* ─── FOOTER ─── */
+        footer { border-top:1px solid var(--border); padding:44px 24px; text-align:center; background:var(--bg); color:var(--text-muted); font-size:13px; }
+        footer a { color:var(--purple); text-decoration:none; }
+
+        /* ─── REVEAL ─── */
+        .reveal { opacity:0; transform:translateY(26px); transition:opacity 0.65s ease, transform 0.65s ease; }
+        .reveal.visible { opacity:1; transform:translateY(0); }
+    </style>
+</head>
+<body>
+
+<!-- ══════════ AUTH MODAL ══════════ -->
+<div class="overlay" id="auth-overlay">
+  <div class="modal-box">
+    <button class="modal-close" onclick="closeAuth()">✕</button>
+    <div class="modal-brand">PLANET<span>FITNESS</span> MAHDIA</div>
+    <div class="modal-heading" id="modal-heading">WELCOME BACK</div>
+    <div class="modal-sub" id="modal-sub">Log in to access your member dashboard.</div>
+
+    <div class="tab-row">
+      <button class="tab-btn active" id="t-login" onclick="switchTab('login')">Log In</button>
+      <button class="tab-btn" id="t-signup" onclick="switchTab('signup')">Sign Up</button>
+    </div>
+
+    <!-- LOGIN -->
+    <div id="f-login">
+      <div class="field"><label>Email</label><input type="email" id="li-email" placeholder="you@email.com"></div>
+      <div class="field"><label>Password</label><input type="password" id="li-pass" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()"></div>
+      <button class="btn-submit" onclick="doLogin()">Log In →</button>
+      <div class="msg-err" id="li-err"></div>
+    </div>
+
+    <!-- SIGN UP -->
+    <div id="f-signup" style="display:none">
+      <div class="field"><label>Full Name</label><input type="text" id="su-name" placeholder="Amine Ben Ali"></div>
+      <div class="field"><label>Email</label><input type="email" id="su-email" placeholder="you@email.com"></div>
+      <div class="field"><label>Password</label><input type="password" id="su-pass" placeholder="Min. 6 characters" onkeydown="if(event.key==='Enter')doSignup()"></div>
+      <button class="btn-submit" onclick="doSignup()">Create Account →</button>
+      <div class="msg-err" id="su-err"></div>
+      <div class="msg-ok"  id="su-ok"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ DASHBOARD OVERLAY ══════════ -->
+<div class="dash-overlay" id="dash-overlay">
+  <div class="dash-box">
+    <button class="dash-close" onclick="closeDash()">✕</button>
+    <div style="clear:both;margin-bottom:20px;">
+      <div class="dash-avatar" id="d-av">A</div>
+      <div class="dash-name-txt" id="d-name">ATHLETE</div>
+      <div class="dash-email-txt" id="d-email">athlete@email.com</div>
+    </div>
+    <div class="dash-stats">
+      <div class="ds"><div class="ds-num" id="d-days">1</div><div class="ds-label">Days Active</div></div>
+      <div class="ds"><div class="ds-num">50</div><div class="ds-label">DT / Month</div></div>
+      <div class="ds"><div class="ds-num">∞</div><div class="ds-label">Zone Access</div></div>
+    </div>
+    <div class="dash-mem">
+      <div><div class="dm-label">Membership</div><div class="dm-val">ALL-ACCESS PASS</div></div>
+      <div class="dm-badge">● Active</div>
+    </div>
+    <button class="btn-logout" onclick="doLogout()">Log Out</button>
+  </div>
+</div>
+
+<!-- ══════════ HEADER ══════════ -->
+<header>
+  <a href="#" class="logo">PLANET<em>FITNESS</em> <small>MAHDIA</small></a>
+  <nav>
+    <a href="#traffic">Crowd</a>
+    <a href="#schedule">Schedule</a>
+    <a href="#pricing">Membership</a>
+  </nav>
+  <div class="hdr-btns" id="hdr-btns">
+    <button class="hbtn hbtn-ghost" onclick="openAuth('login')">Log In</button>
+    <button class="hbtn hbtn-purple" onclick="openAuth('signup')">Sign Up</button>
+  </div>
+</header>
+
+<!-- ══════════ HERO ══════════ -->
+<section id="hero">
+  <div class="blob blob-a"></div>
+  <div class="blob blob-b"></div>
+  <div style="position:relative;z-index:2;">
+    <div class="hero-badge">📍 Rue Ibn Rochd, Mahdia, Tunisia</div>
+    <h1 class="hero-title">PLANET<br><span class="acc">FITNESS</span></h1>
+    <p class="hero-sub">No gimmicks. Premium iron, nightly gymnastics, intense CrossFit boxes, and zones built for pure performance.</p>
+    <div class="hero-actions">
+      <a href="#pricing" class="btn-wh">50 DT / Month →</a>
+      <a href="#schedule" class="btn-dk">View Schedule</a>
+    </div>
+  </div>
+</section>
+
+<!-- stats -->
+<div class="stats-bar reveal">
+  <div class="si"><div class="si-num">10<em>+</em></div><div class="si-label">Cardio Machines</div></div>
+  <div class="si"><div class="si-num"><em>50</em> DT</div><div class="si-label">Per Month</div></div>
+  <div class="si"><div class="si-num">3<em>×</em></div><div class="si-label">CrossFit / Week</div></div>
+  <div class="si"><div class="si-num">4<em>+</em></div><div class="si-label">Dedicated Zones</div></div>
+</div>
+
+<!-- ══════════ TRAFFIC ══════════ -->
+<section id="traffic" class="section">
+  <div class="section-inner">
+    <div class="two-col">
+      <div class="reveal">
+        <p class="s-label">Live Crowd Pulse</p>
+        <h2 class="s-title">BEST TIME<br>TO TRAIN</h2>
+        <div class="tc">
+          <div class="tr">
+            <div class="tr-meta">
+              <span>08:00 – 12:00 &nbsp; Morning</span>
+              <span style="color:#22c55e"><span class="sd sd-g"></span>Quiet · 25%</span>
+            </div>
+            <div class="tb"><div class="tf tf-g" data-w="25%"></div></div>
+          </div>
+          <div class="tr">
+            <div class="tr-meta">
+              <span>12:00 – 16:00 &nbsp; Midday</span>
+              <span style="color:#eab308"><span class="sd sd-y"></span>Moderate · 55%</span>
+            </div>
+            <div class="tb"><div class="tf tf-y" data-w="55%"></div></div>
+          </div>
+          <div class="tr">
+            <div class="tr-meta">
+              <span>16:00 – 21:00 &nbsp; Peak</span>
+              <span style="color:#ef4444"><span class="sd sd-r"></span>Busy · 90%</span>
+            </div>
+            <div class="tb"><div class="tf tf-r" data-w="90%"></div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="reveal" style="transition-delay:0.13s">
+        <p class="s-label">Unmatched Arsenal</p>
+        <h2 class="s-title">THE ZONES</h2>
+        <div class="eq-grid">
+          <div class="eq-card"><div class="eq-t">10 Cardio Machines</div><div class="eq-d">Bikes & treadmills on a dedicated upper mezzanine.</div></div>
+          <div class="eq-card"><div class="eq-t">Full-Body Iron</div><div class="eq-d">Complete circuit machines for every muscle group.</div></div>
+          <div class="eq-card"><div class="eq-t">CrossFit Zone</div><div class="eq-d">Open room built for high-intensity functional training.</div></div>
+          <div class="eq-card"><div class="eq-t">PF Pour Femme</div><div class="eq-d">A fully equipped separate space designed for women.</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════ SCHEDULE ══════════ -->
+<section id="schedule" class="section">
+  <div class="section-inner" style="text-align:center;">
+    <p class="s-label reveal">Nightly Gymnastics · High Intensity Daily</p>
+    <h2 class="s-title reveal">DAILY SCHEDULE</h2>
+    <div class="day-tabs reveal">
+      <button class="day-tab active" onclick="switchDay('mon',this)">Mon</button>
+      <button class="day-tab" onclick="switchDay('tue',this)">Tue</button>
+      <button class="day-tab" onclick="switchDay('wed',this)">Wed</button>
+      <button class="day-tab" onclick="switchDay('thu',this)">Thu</button>
+      <button class="day-tab" onclick="switchDay('fri',this)">Fri</button>
+      <button class="day-tab" onclick="switchDay('sat',this)">Sat</button>
+    </div>
+    <div class="sched-card reveal" id="sched-card"></div>
+  </div>
+</section>
+
+<!-- ══════════ PRICING ══════════ -->
+<section id="pricing" class="section">
+  <div class="section-inner" style="text-align:center;">
+    <p class="s-label reveal">Simple & Transparent</p>
+    <h2 class="s-title reveal">MEMBERSHIP</h2>
+    <div class="pc reveal">
+      <div class="pc-badge">⚡ All-Access Pass</div>
+      <div class="pc-price"><sup>DT</sup>50<sub>/mo</sub></div>
+      <p class="pc-period">Per person · No hidden fees · Cancel anytime</p>
+      <ul class="pc-list">
+        <li>Unlimited gym access — all zones</li>
+        <li>Nightly gymnastics (every day, 20:30)</li>
+        <li>CrossFit box 3× per week (Mon, Wed, Fri)</li>
+        <li>10 cardio machines — upper mezzanine</li>
+        <li>PF Pour Femme zone access</li>
+        <li>Free locker room & showers</li>
+        <li>Expert coaching on the floor</li>
+      </ul>
+      <button class="btn-join" onclick="openAuth('signup')">Join for 50 DT — Sign Up Now</button>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════ FOOTER ══════════ -->
+<footer>
+  <div style="font-family:'Bebas Neue',sans-serif;font-size:24px;letter-spacing:0.06em;color:#fff;margin-bottom:10px;">
+    PLANET<span style="color:var(--purple)">FITNESS</span> MAHDIA
+  </div>
+  <p>📍 Rue Ibn Rochd, Mahdia, Tunisia &nbsp;·&nbsp; 📞 <a href="tel:73695479">73 695 479</a></p>
+  <p style="margin-top:8px;font-size:11px;color:#2a2a2a;">© 2025 Planet Fitness Mahdia. All rights reserved.</p>
+</footer>
+
+<script>
+/* ════════════════════════════════
+   SCHEDULE
+════════════════════════════════ */
+const sched = {
+  mon:[
+    {t:'16:00 – 17:30', n:'Engine & Aerobic Capacity',       tag:'CrossFit',  cls:'stag-d'},
+    {t:'18:00 – 20:30', n:'Strength Block + WOD',            tag:'CrossFit',  cls:'stag-d'},
+    {t:'20:30 – 22:00', n:'Night Gymnastics',                tag:'Nightly',   cls:'stag-night'},
+  ],
+  tue:[
+    {t:'17:00 – 18:30', n:'Open Lifting Session',            tag:'Open Gym',  cls:'stag-d'},
+    {t:'19:00 – 20:30', n:'Core & Explosive Power',          tag:'Strength',  cls:'stag-d'},
+    {t:'20:30 – 22:00', n:'Night Gymnastics',                tag:'Nightly',   cls:'stag-night'},
+  ],
+  wed:[
+    {t:'16:30 – 18:00', n:'Gymnastics Skill & Core',         tag:'CrossFit',  cls:'stag-d'},
+    {t:'18:30 – 20:00', n:'Olympic Weightlifting',           tag:'CrossFit',  cls:'stag-d'},
+    {t:'20:30 – 22:00', n:'Night Gymnastics',                tag:'Nightly',   cls:'stag-night'},
+  ],
+  thu:[
+    {t:'17:00 – 18:30', n:'Endurance Run + EMOM',            tag:'Conditioning', cls:'stag-d'},
+    {t:'19:00 – 20:30', n:'Explosive Power Blocks',          tag:'Strength',     cls:'stag-d'},
+    {t:'20:30 – 22:00', n:'Night Gymnastics',                tag:'Nightly',      cls:'stag-night'},
+  ],
+  fri:[
+    {t:'17:00 – 19:30', n:'Friday Madness — Team WOD',       tag:'Community', cls:'stag-com'},
+    {t:'20:30 – 22:00', n:'Night Gymnastics',                tag:'Nightly',   cls:'stag-night'},
+  ],
+  sat:[
+    {t:'10:00 – 12:00', n:'Athlete Partner WOD',             tag:'CrossFit',  cls:'stag-d'},
+    {t:'20:30 – 22:00', n:'Night Gymnastics',                tag:'Nightly',   cls:'stag-night'},
+  ],
+};
+
+function switchDay(day, btn) {
+  document.querySelectorAll('.day-tab').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('sched-card').innerHTML = sched[day].map((s,i) => `
+    <div class="sched-item" style="animation-delay:${i*0.07}s">
+      <div><div class="sched-t">${s.t}</div><div class="sched-n">${s.n}</div></div>
+      <span class="stag ${s.cls}">${s.tag}</span>
+    </div>`).join('');
+}
+switchDay('mon', document.querySelector('.day-tab.active'));
+
+
+/* ════════════════════════════════
+   AUTH SYSTEM (localStorage)
+════════════════════════════════ */
+const UKEY = 'pfm_users';
+const SKEY = 'pfm_session';
+
+const getUsers   = () => JSON.parse(localStorage.getItem(UKEY) || '{}');
+const saveUsers  = u => localStorage.setItem(UKEY, JSON.stringify(u));
+const getSession = () => JSON.parse(localStorage.getItem(SKEY) || 'null');
+const saveSession= s => localStorage.setItem(SKEY, JSON.stringify(s));
+const clearSess  = () => localStorage.removeItem(SKEY);
+
+function openAuth(tab) {
+  switchTab(tab);
+  document.getElementById('li-err').textContent = '';
+  document.getElementById('su-err').textContent = '';
+  document.getElementById('su-ok').textContent  = '';
+  document.getElementById('auth-overlay').classList.add('open');
+}
+function closeAuth() { document.getElementById('auth-overlay').classList.remove('open'); }
+function openDash()  { document.getElementById('dash-overlay').classList.add('open'); }
+function closeDash() { document.getElementById('dash-overlay').classList.remove('open'); }
+
+document.getElementById('auth-overlay').addEventListener('click', e => { if(e.target===e.currentTarget) closeAuth(); });
+document.getElementById('dash-overlay').addEventListener('click', e => { if(e.target===e.currentTarget) closeDash(); });
+document.addEventListener('keydown', e => { if(e.key==='Escape'){ closeAuth(); closeDash(); } });
+
+function switchTab(tab) {
+  const isLogin = tab === 'login';
+  document.getElementById('t-login').classList.toggle('active', isLogin);
+  document.getElementById('t-signup').classList.toggle('active', !isLogin);
+  document.getElementById('f-login').style.display  = isLogin ? '' : 'none';
+  document.getElementById('f-signup').style.display = isLogin ? 'none' : '';
+  document.getElementById('modal-heading').textContent = isLogin ? 'WELCOME BACK' : 'JOIN THE GYM';
+  document.getElementById('modal-sub').textContent = isLogin
+    ? 'Log in to access your member dashboard.'
+    : 'Create your free account in seconds.';
+}
+
+function doLogin() {
+  const email = document.getElementById('li-email').value.trim().toLowerCase();
+  const pass  = document.getElementById('li-pass').value;
+  const err   = document.getElementById('li-err');
+  if (!email || !pass) { err.textContent = 'Please fill in all fields.'; return; }
+  const users = getUsers();
+  if (!users[email])              { err.textContent = 'No account found with that email.'; return; }
+  if (users[email].pass !== btoa(pass)) { err.textContent = 'Incorrect password.'; return; }
+  saveSession({ email, name: users[email].name, joined: users[email].joined });
+  closeAuth();
+  updateHeader();
+}
+
+function doSignup() {
+  const name  = document.getElementById('su-name').value.trim();
+  const email = document.getElementById('su-email').value.trim().toLowerCase();
+  const pass  = document.getElementById('su-pass').value;
+  const err   = document.getElementById('su-err');
+  const ok    = document.getElementById('su-ok');
+  err.textContent = ''; ok.textContent = '';
+  if (!name || !email || !pass)        { err.textContent = 'Please fill in all fields.'; return; }
+  if (!/\S+@\S+\.\S+/.test(email))     { err.textContent = 'Enter a valid email.'; return; }
+  if (pass.length < 6)                  { err.textContent = 'Password must be at least 6 characters.'; return; }
+  const users = getUsers();
+  if (users[email]) { err.textContent = 'An account with this email already exists.'; return; }
+  users[email] = { name, pass: btoa(pass), joined: Date.now() };
+  saveUsers(users);
+  saveSession({ email, name, joined: Date.now() });
+  ok.textContent = '✓ Account created! Logging you in…';
+  setTimeout(() => { closeAuth(); updateHeader(); }, 900);
+}
+
+function doLogout() { clearSess(); closeDash(); updateHeader(); }
+
+function updateHeader() {
+  const s = getSession();
+  const el = document.getElementById('hdr-btns');
+  if (s) {
+    const init  = s.name.charAt(0).toUpperCase();
+    const fname = s.name.split(' ')[0];
+    const days  = Math.max(1, Math.floor((Date.now() - s.joined) / 86400000) + 1);
+    el.innerHTML = `<button class="hbtn hbtn-user" onclick="openDash()">
+      <span class="user-dot">${init}</span>${fname}
+    </button>`;
+    // populate dashboard
+    document.getElementById('d-av').textContent    = init;
+    document.getElementById('d-name').textContent  = s.name.toUpperCase();
+    document.getElementById('d-email').textContent = s.email;
+    document.getElementById('d-days').textContent  = days;
+  } else {
+    el.innerHTML = `
+      <button class="hbtn hbtn-ghost" onclick="openAuth('login')">Log In</button>
+      <button class="hbtn hbtn-purple" onclick="openAuth('signup')">Sign Up</button>`;
+  }
+}
+
+updateHeader();
+
+
+/* ════════════════════════════════
+   SCROLL REVEAL
+════════════════════════════════ */
+const ro = new IntersectionObserver(entries => {
+  entries.forEach(e => { if(e.isIntersecting) e.target.classList.add('visible'); });
+}, { threshold: 0.1 });
+document.querySelectorAll('.reveal').forEach(el => ro.observe(el));
+
+/* ════════════════════════════════
+   TRAFFIC BAR ANIMATION
+════════════════════════════════ */
+window.addEventListener('load', () => {
+  setTimeout(() => {
+    document.querySelectorAll('.tf').forEach(el => {
+      const w = el.dataset.w;
+      el.style.width = '0%';
+      requestAnimationFrame(() => requestAnimationFrame(() => { el.style.width = w; }));
+    });
+  }, 350);
+});
+</script>
+</body>
+</html>
